@@ -1,0 +1,148 @@
+---
+title: "Sensitivity_initial_parameters"
+author: "RD"
+format: html
+editor: visual
+---
+
+# Check if the system is sensible to change in initial parameters.
+
+## Define the system we want to check
+
+```{r}
+system <- "^species_initial_densitiesNMCP"
+
+regex <- paste0(system, "_.*\\.R$")
+```
+
+## Load the data
+
+```{r}
+
+# Define the directory containing the RDS files
+dir_path <- '~/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/Simulations/species_initial_density/'
+
+# List all RDS files in the directory
+rds_files <- list.files(path = dir_path, pattern = regex, full.names = TRUE)
+
+#Define a function to process each RDS file
+process_rds <- function(file, name) {
+  # Read the RDS file
+  data <- readRDS(file)
+  
+  columns_to_keep <- c("time", "PP", "Na", "Nj", "Ma", "Mj", "Ca", "Cj", "Pa", "Pj", "Qa", "Qj", "sc")  # Replace with your actual column names
+  
+  # Extract the outputs and process them
+  processed_data <- data %>%
+    pull(outputs) %>%
+    map_dfr(as.data.frame) %>%
+    filter(time >= 750) %>%
+    #select(any_of(c(time, PP, Na, Nj, Ma, Mj, Ca, Cj, Pa, Pj, Qa, Qj, sc))) %>%  # Select the columns you want to keep
+    #pluck
+    #select(any_of(columns_to_keep)) %>%
+    mutate(across(everything(), ~ as.numeric(as.character(.)))) %>%
+    mutate(sc = name)  # Use the provided name
+  
+  #return(processed_data)
+}
+
+# Apply the function to all RDS files and store the results in the global environment
+map2(rds_files, basename(rds_files), ~ assign(gsub("\\.R$", "", .y), process_rds(.x, .y), envir = .GlobalEnv))
+
+
+
+# Get the names of all objects in the global environment
+object_names <- ls()
+
+# Filter the object names based on the pattern and check if they are data frames
+data_frame_names <- object_names[grepl(system, object_names) & sapply(object_names, function(x) is.data.frame(get(x)))]
+
+# Get the data frames from their names
+data_frames <- lapply(data_frame_names, get)
+
+# Bind rows of all data frames into a single data frame
+merged_df <- bind_rows(data_frames)
+```
+
+## Define the species we want to check
+
+```{r}
+# Define the species
+species <- "Pa"
+
+# Convert the species to a symbol
+species_sym <- sym(species)
+
+```
+
+## Check for stability
+
+```{r}
+
+# Define dynamics plot titles
+title <- paste0("Count of 'Yes' and 'No' scenarios for each PP value", " - " ,species_sym)
+
+
+merged_df %>%       
+  filter(time %in% c(799, 800)) |>    
+  group_by(sc, PP)%>%      
+  mutate(diff = (!!species_sym - lag(!!species_sym)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) %>%
+  filter(diff != "NA") |>   select(c(time, sc, PP, diff, bool))|>   
+  group_by(PP, bool)|>   summarise(count = n()) %>%    
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +   
+  geom_bar(stat = "identity", position = "stack", color = "black") +   
+  labs(title = title, x = "PP", y = "Count", fill = "Is stable?") +   scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+
+
+merged_df |> 
+  filter(time %in% c(799, 800)) |>    
+  group_by(sc, PP)%>%      
+ mutate(diff = (!!species_sym - lag(!!species_sym)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) %>%
+  filter(diff != "NA") |>   select(c(time, sc, PP, diff, bool))|>   
+  group_by(PP, bool)|>   summarise(count = n())
+
+```
+
+## When stable, is there a difference in final density compared to ref?
+
+```{r}
+
+# Create the dynamic reference column name
+reference_col <- paste0("reference_", species)
+reference_sym <- sym(reference_col)
+
+# Perform the data manipulation
+reference_valuesN <- merged_df %>%
+  filter(time == 800) %>%
+  separate(sc, into = c("base", "value1", "value2", "index_i_in_loop", "autre"), sep = "_|\\.R", extra = "merge", fill = "right") %>%
+  group_by(PP) %>% 
+  slice_min(order_by = as.numeric(index_i_in_loop)) %>%
+  summarise(!!reference_col := !!species_sym)
+
+
+tolerance <- 0.0001
+
+# Join the reference values back to the merged_data
+a_merged_data <- merged_df %>%
+  filter(time == 800) |> 
+  left_join(reference_valuesN, by = "PP") |> 
+   mutate(colour = ifelse(abs(!!species_sym - !!reference_sym) < tolerance, "blue", "red"))
+
+# Plot the data
+ggplot(a_merged_data, aes(x = sc, y = !!species_sym, fill = colour)) +
+  geom_col() +
+  scale_fill_identity() +
+  facet_wrap(~PP)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Determine color based on comparison with reference values
+a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(colour = ifelse(abs(!!species_sym - !!reference_sym) < tolerance, "blue", "red")) |> 
+  group_by(PP, colour) |> 
+  summarise(colour = n())
+
+```

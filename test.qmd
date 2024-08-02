@@ -1,0 +1,13 @@
+---
+  title: "Example Document"
+  output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.path = "D:/Rachel/Auto_PP_scenarios_beaver_modif_vg/Pop_dyn_true_veg/Results/Sensitivity_analysis/all_parameters/figures/") 
+
+
+if (!dir.exists("figures")) { dir.create("figures") }
+```
+
+plot(mtcars$wt, mtcars$mpg)

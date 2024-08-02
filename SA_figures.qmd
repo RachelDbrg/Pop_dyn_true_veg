@@ -1,0 +1,1564 @@
+---
+title: "SA_figures"
+author: "RD"
+format: html
+editor: visual
+---
+
+---
+title: "Sensitivity_analysis_exploration"
+author: "RD"
+format: html
+editor: visual
+---
+
+```{r setup}
+knitr::opts_knit$set(root.dir = '~/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/Simulations')
+library(tidyverse)
+```
+
+# C.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_C.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%       
+  filter(time %in% c(799, 800)) |>    
+  group_by(sc, PP)%>%      
+  mutate(diff = (Na - lag(Na)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>    
+  filter(diff != "NA") |>   select(c(time, sc, PP, diff, bool))|>   
+  group_by(PP, bool)|>   summarise(count = n()) %>%    
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +   
+  geom_bar(stat = "identity", position = "stack", color = "black") +   
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +   scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |> 
+  filter(time %in% c(799, 800)) |>    
+  group_by(sc, PP)%>%      
+  mutate(diff = (Ca - lag(Ca)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>    
+  filter(diff != "NA") |>   select(c(time, sc, PP, diff, bool))|>   
+  group_by(PP, bool)|>   summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>%
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ca = first(Ca))
+```
+
+```{r}
+
+tolerance <- 0.0001
+
+# Join the reference values back to the merged_data
+a_merged_data <- merged_data %>%
+  filter(time == 800) |> 
+  left_join(reference_values, by = "PP") |> 
+  mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))
+
+# Plot the data
+ggplot(a_merged_data, aes(x = sc, y = Ca, fill = colour)) +
+  geom_col() +
+  scale_fill_identity() +
+  facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) |> 
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+```{r}
+# Determine color based on comparison with reference values
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) |> 
+  group_by(PP, similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+```{r}
+nbe_rows <- a_merged_data |> 
+  filter(time == 800) |> 
+  summarise(countrows = n())
+
+nbe_rows
+```
+
+# N.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_N.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%       
+  filter(time %in% c(799, 800)) |>    
+  group_by(sc, PP)%>%      
+  mutate(diff = (Na - lag(Na)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>    
+  filter(diff != "NA") |>   select(c(time, sc, PP, diff, bool))|>   
+  group_by(PP, bool)|>   summarise(count = n()) %>%    
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +   
+  geom_bar(stat = "identity", position = "stack", color = "black") +   
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +   scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |> 
+  filter(time %in% c(799, 800)) |>    
+  group_by(sc, PP)%>%      
+  mutate(diff = (Na - lag(Na)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>    
+  filter(diff != "NA") |>   select(c(time, sc, PP, diff, bool))|>   
+  group_by(PP, bool)|>   summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>%
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Na = first(Na))
+```
+
+```{r}
+
+tolerance <- 0.0001
+
+# Join the reference values back to the merged_data
+a_merged_data <- merged_data %>%
+  filter(time == 800) |> 
+  left_join(reference_values, by = "PP") |> 
+  mutate(colour = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red"))
+
+# Plot the data
+ggplot(a_merged_data, aes(x = sc, y = Na, fill = colour)) +
+  geom_col() +
+  scale_fill_identity() +
+  facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red")) |> 
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+# M.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_M.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Ma - lag(Ma)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Ma - lag(Ma)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ma = first(Ma))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Ma, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+# CP.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_CP.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Ca - lag(Ca)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Ca - lag(Ca)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ca = first(Ca))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Ca, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+## 6. What parameters influence C density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+```
+
+## Evaluate the strength of fold change and isolate the most influencial parameters
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%
+  filter(time == 800) %>%
+  left_join(reference_values, by = "PP") %>%
+  mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) %>%
+  group_by(PP) %>%
+  filter(colour == "red") %>%
+  mutate(fold_change = Ca / reference_Ca,
+         direction_change = if_else(fold_change > 1, "increase", "decrease"),
+         decimal_part = (fold_change - floor(fold_change)),
+         percent_change = decimal_part * 100,
+         round_fold_change = round(decimal_part, 3)) %>%
+  select(Ca, reference_Ca, fold_change, decimal_part, direction_change, sc, percent_change, PP) %>%
+  mutate(strenght_fold_change = if_else(decimal_part <= 0.10, "nochange",
+                                        if_else(decimal_part <= 0.25, "25%",
+                                        if_else(decimal_part <= 0.50, "50%",
+                                        if_else(decimal_part <= 0.75, "75%",
+                                        if_else(decimal_part <= 0.90, "else", "nochange"))))))
+
+
+fold_change_summary <- a_merged_data %>%
+  group_by(PP, strenght_fold_change) %>%
+  summarise(count = n())
+
+# ggplot(fold_change_summary, aes(x = strenght_fold_change, y = count)) +
+#   geom_bar(stat = "identity") +
+#   theme_minimal() +
+#   labs(title = "Frequency of Fold Change Strength Categories",
+#        x = "Fold Change Strength Category",
+#        y = "Count") +
+#   facet_wrap(~PP)
+  
+```
+
+```{r}
+ggplot(a_merged_data, aes(x = fold_change, fill = direction_change)) +
+  geom_histogram(binwidth = 0.05, color = "black", position = "dodge") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Histogram of Fold Change Values",
+       x = "Fold Change",
+       y = "Count")+
+  facet_wrap(~PP)
+```
+
+# NP.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_NP.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Na - lag(Na)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Na - lag(Na)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Na = first(Na))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Na, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+## 6. What parameters influence N density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+
+
+
+```
+
+## Evaluate the strength of fold change and isolate the most influencial parameters
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ca = first(Ca))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%
+  filter(time == 800) %>%
+  left_join(reference_values, by = "PP") %>%
+  mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) %>%
+  group_by(PP) %>%
+  filter(colour == "red") %>%
+  mutate(fold_change = Ca / reference_Ca,
+         direction_change = if_else(fold_change > 1, "increase", "decrease"),
+         decimal_part = (fold_change - floor(fold_change)),
+         percent_change = decimal_part * 100,
+         round_fold_change = round(decimal_part, 3)) %>%
+  select(Ca, reference_Ca, fold_change, decimal_part, direction_change, sc, percent_change, PP) %>%
+  mutate(strenght_fold_change = if_else(decimal_part <= 0.10, "nochange",
+                                        if_else(decimal_part <= 0.25, "25%",
+                                        if_else(decimal_part <= 0.50, "50%",
+                                        if_else(decimal_part <= 0.75, "75%",
+                                        if_else(decimal_part <= 0.90, "else", "nochange"))))))
+
+
+fold_change_summary <- a_merged_data %>%
+  group_by(PP, strenght_fold_change) %>%
+  summarise(count = n())
+
+# ggplot(fold_change_summary, aes(x = strenght_fold_change, y = count)) +
+#   geom_bar(stat = "identity") +
+#   theme_minimal() +
+#   labs(title = "Frequency of Fold Change Strength Categories",
+#        x = "Fold Change Strength Category",
+#        y = "Count") +
+#   facet_wrap(~PP)
+  
+```
+
+```{r}
+ggplot(a_merged_data, aes(x = fold_change, fill = direction_change)) +
+  geom_histogram(binwidth = 0.05, color = "black", position = "dodge") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Histogram of Fold Change Values",
+       x = "Fold Change",
+       y = "Count")+
+  facet_wrap(~PP)
+```
+
+# MP.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_MP.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Ma - lag(Ma)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Ma - lag(Ma)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ma = first(Ma))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Ma, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+## 6. What parameters influence M density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+```
+
+## Evaluate the strength of fold change and isolate the most influencial parameters
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%
+  filter(time == 800) %>%
+  left_join(reference_values, by = "PP") %>%
+  mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) %>%
+  group_by(PP) %>%
+  filter(colour == "red") %>%
+  mutate(fold_change = Ca / reference_Ca,
+         direction_change = if_else(fold_change > 1, "increase", "decrease"),
+         decimal_part = (fold_change - floor(fold_change)),
+         percent_change = decimal_part * 100,
+         round_fold_change = round(decimal_part, 3)) %>%
+  select(Ca, reference_Ca, fold_change, decimal_part, direction_change, sc, percent_change, PP) %>%
+  mutate(strenght_fold_change = if_else(decimal_part <= 0.10, "nochange",
+                                        if_else(decimal_part <= 0.25, "25%",
+                                        if_else(decimal_part <= 0.50, "50%",
+                                        if_else(decimal_part <= 0.75, "75%",
+                                        if_else(decimal_part <= 0.90, "else", "nochange"))))))
+
+
+fold_change_summary <- a_merged_data %>%
+  group_by(PP, strenght_fold_change) %>%
+  summarise(count = n())
+
+ggplot(fold_change_summary, aes(x = strenght_fold_change, y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Frequency of Fold Change Strength Categories",
+       x = "Fold Change Strength Category",
+       y = "Count") +
+  facet_wrap(~PP)
+  
+```
+
+```{r}
+ggplot(a_merged_data, aes(x = fold_change, fill = direction_change)) +
+  geom_histogram(binwidth = 0.05, color = "black", position = "dodge") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Histogram of Fold Change Values",
+       x = "Fold Change",
+       y = "Count")+
+  facet_wrap(~PP)
+```
+
+# MC.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_MC.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Ca - lag(Ca)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Ma - lag(Ma)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Ca - lag(Ca)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Ma - lag(Ma)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ca = first(Ca))
+```
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ma = first(Ma))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Ca, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Ma, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+## 6. What parameters influence C density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+```
+
+## 6. What parameters influence M density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+```
+
+## Evaluate the strength of fold change and isolate the most influencial parameters
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%
+  filter(time == 800) %>%
+  left_join(reference_values, by = "PP") %>%
+  mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) %>%
+  group_by(PP) %>%
+  filter(colour == "red") %>%
+  mutate(fold_change = Ca / reference_Ca,
+         direction_change = if_else(fold_change > 1, "increase", "decrease"),
+         decimal_part = (fold_change - floor(fold_change)),
+         percent_change = decimal_part * 100,
+         round_fold_change = round(decimal_part, 3)) %>%
+  select(Ca, reference_Ca, fold_change, decimal_part, direction_change, sc, percent_change, PP) %>%
+  mutate(strenght_fold_change = if_else(decimal_part <= 0.10, "nochange",
+                                        if_else(decimal_part <= 0.25, "25%",
+                                        if_else(decimal_part <= 0.50, "50%",
+                                        if_else(decimal_part <= 0.75, "75%",
+                                        if_else(decimal_part <= 0.90, "else", "nochange"))))))
+
+
+fold_change_summary <- a_merged_data %>%
+  group_by(PP, strenght_fold_change) %>%
+  summarise(count = n())
+
+ggplot(fold_change_summary, aes(x = strenght_fold_change, y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Frequency of Fold Change Strength Categories",
+       x = "Fold Change Strength Category",
+       y = "Count") +
+  facet_wrap(~PP)
+  
+```
+
+```{r}
+ggplot(a_merged_data, aes(x = fold_change, fill = direction_change)) +
+  geom_histogram(binwidth = 0.05, color = "black", position = "dodge") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Histogram of Fold Change Values",
+       x = "Fold Change",
+       y = "Count")+
+  facet_wrap(~PP)
+```
+
+# NMP.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_NMP.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Ma - lag(Ma)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Na - lag(Na)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Na - lag(Na)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ma = first(Ma))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Ma, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Na = first(Na))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Na, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+## 6. What parameters influence M density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+```
+
+## 6. What parameters influence N density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+```
+
+## Evaluate the strength of fold change and isolate the most influencial parameters
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%
+  filter(time == 800) %>%
+  left_join(reference_values, by = "PP") %>%
+  mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) %>%
+  group_by(PP) %>%
+  filter(colour == "red") %>%
+  mutate(fold_change = Ca / reference_Ca,
+         direction_change = if_else(fold_change > 1, "increase", "decrease"),
+         decimal_part = (fold_change - floor(fold_change)),
+         percent_change = decimal_part * 100,
+         round_fold_change = round(decimal_part, 3)) %>%
+  select(Ca, reference_Ca, fold_change, decimal_part, direction_change, sc, percent_change, PP) %>%
+  mutate(strenght_fold_change = if_else(decimal_part <= 0.10, "nochange",
+                                        if_else(decimal_part <= 0.25, "25%",
+                                        if_else(decimal_part <= 0.50, "50%",
+                                        if_else(decimal_part <= 0.75, "75%",
+                                        if_else(decimal_part <= 0.90, "else", "nochange"))))))
+
+
+fold_change_summary <- a_merged_data %>%
+  group_by(PP, strenght_fold_change) %>%
+  summarise(count = n())
+
+ggplot(fold_change_summary, aes(x = strenght_fold_change, y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Frequency of Fold Change Strength Categories",
+       x = "Fold Change Strength Category",
+       y = "Count") +
+  facet_wrap(~PP)
+  
+```
+
+```{r}
+ggplot(a_merged_data, aes(x = fold_change, fill = direction_change)) +
+  geom_histogram(binwidth = 0.05, color = "black", position = "dodge") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Histogram of Fold Change Values",
+       x = "Fold Change",
+       y = "Count")+
+  facet_wrap(~PP)
+```
+
+# NCP.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_NCP.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Na - lag(Na)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Na - lag(Na)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Na = first(Na))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Na - reference_Na) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Na, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+## 6. What parameters influence N density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+```
+
+## Evaluate the strength of fold change and isolate the most influencial parameters
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%
+  filter(time == 800) %>%
+  left_join(reference_values, by = "PP") %>%
+  mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) %>%
+  group_by(PP) %>%
+  filter(colour == "red") %>%
+  mutate(fold_change = Ca / reference_Ca,
+         direction_change = if_else(fold_change > 1, "increase", "decrease"),
+         decimal_part = (fold_change - floor(fold_change)),
+         percent_change = decimal_part * 100,
+         round_fold_change = round(decimal_part, 3)) %>%
+  select(Ca, reference_Ca, fold_change, decimal_part, direction_change, sc, percent_change, PP) %>%
+  mutate(strenght_fold_change = if_else(decimal_part <= 0.10, "nochange",
+                                        if_else(decimal_part <= 0.25, "25%",
+                                        if_else(decimal_part <= 0.50, "50%",
+                                        if_else(decimal_part <= 0.75, "75%",
+                                        if_else(decimal_part <= 0.90, "else", "nochange"))))))
+
+
+fold_change_summary <- a_merged_data %>%
+  group_by(PP, strenght_fold_change) %>%
+  summarise(count = n())
+
+ggplot(fold_change_summary, aes(x = strenght_fold_change, y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Frequency of Fold Change Strength Categories",
+       x = "Fold Change Strength Category",
+       y = "Count") +
+  facet_wrap(~PP)
+  
+```
+
+```{r}
+ggplot(a_merged_data, aes(x = fold_change, fill = direction_change)) +
+  geom_histogram(binwidth = 0.05, color = "black", position = "dodge") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Histogram of Fold Change Values",
+       x = "Fold Change",
+       y = "Count")+
+  facet_wrap(~PP)
+```
+
+# NMCP.R
+
+## Load RDS
+
+```{r}
+merged_data <- readRDS(file = "C:/Users/lab/Documents/Automation_Primary_productivity/scripts/Auto_PP_scenarios/Sensitivity_analysis/save_RDS_merged_df/SA_merged_NMCP.rds")
+```
+
+## 3. Look if simulations are stabilized or not
+
+To check if equilibruim are stable or not, we compute the difference between density obtained at time == 300 - time == 299. Si en arrondissant a la 5eme decimale, on obtient les mêmes valeurs, alors on considere la simulation comme stable.
+
+```{r}
+merged_data %>%
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>% 
+  mutate(diff = (Ma - lag(Ma)),
+         bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |>
+  filter(diff != "NA") |>  
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>   summarise(count = n()) %>%
+  ggplot(aes(x = as.factor(PP), y = count, fill = bool)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") + 
+  labs(title = "Count of 'Yes' and 'No' scenarios for each PP value",        x = "PP", y = "Count", fill = "Is stable?") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red"))
+```
+
+## 4. Nbe of stable simulations
+
+```{r}
+merged_data |>
+  filter(time %in% c(799, 800)) |>
+  group_by(sc, PP)%>%
+  mutate(diff = (Ma - lag(Ma)),          bool = ifelse(round(diff, 3) == 0, "Yes", "No")) |> 
+  filter(diff != "NA") |>
+  select(c(time, sc, PP, diff, bool))|>
+  group_by(PP, bool)|>  
+  summarise(count = n()) |> View()
+```
+
+## 5. Among stable simulations, how many are the same as the refence?
+
+```{r}
+reference_values <- merged_data %>% 
+  filter(time == 800) |>
+  group_by(PP) %>%
+  summarise(reference_Ma = first(Ma))
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  
+# Plot the data 
+ggplot(a_merged_data, aes(x = sc, y = Ma, fill = colour)) +   geom_col() +   scale_fill_identity() +   facet_wrap(~PP)
+```
+
+## Count for each PP values, the number of simulations that are similar to reference
+
+```{r}
+# Determine color based on comparison with reference values 
+color_counts <- a_merged_data %>%
+  filter(time == 800) |> 
+  mutate(similar_density = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red")) |>
+  group_by( similar_density) |> 
+  summarise(nbe_similar_density = n())
+
+print(color_counts)
+```
+
+## 6. What parameters influence C density?
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+
+test <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(sc, PP) |> 
+  filter(colour == "red") |> 
+  select(c(sc, colour, PP))
+
+tex <- test |> 
+  group_by(PP) %>%
+  summarize(sc_values = paste(unique(sc), collapse = ", "),
+            nbe_sc = n())
+
+
+
+unique_sc_values <- unique(test$sc)
+unique_sc_values
+```
+
+## Evaluate the strength of fold change and isolate the most influencial parameters
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%
+  filter(time == 800) %>%
+  left_join(reference_values, by = "PP") %>%
+  mutate(colour = ifelse(abs(Ma - reference_Ma) < tolerance, "blue", "red")) %>%
+  group_by(PP) %>%
+  filter(colour == "red") %>%
+  mutate(fold_change = Ma / reference_Ma,
+         direction_change = if_else(fold_change > 1, "increase", "decrease"),
+         decimal_part = (fold_change - floor(fold_change)),
+         percent_change = decimal_part * 100,
+         round_fold_change = round(decimal_part, 3)) %>%
+  select(Ma, reference_Ma, fold_change, decimal_part, direction_change, sc, percent_change, PP) %>%
+  mutate(strenght_fold_change = if_else(decimal_part <= 0.10, "nochange",
+                                        if_else(decimal_part <= 0.25, "25%",
+                                        if_else(decimal_part <= 0.50, "50%",
+                                        if_else(decimal_part <= 0.75, "75%",
+                                        if_else(decimal_part <= 0.90, "else", "nochange"))))))
+
+
+fold_change_summary <- a_merged_data %>%
+  group_by(PP, strenght_fold_change) %>%
+  summarise(count = n())
+
+ggplot(fold_change_summary, aes(x = strenght_fold_change, y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Frequency of Fold Change Strength Categories",
+       x = "Fold Change Strength Category",
+       y = "Count") +
+  facet_wrap(~PP)
+  
+```
+
+## Evaluate the strength of fold change and isolate the most influencial parameters
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%   filter(time == 800) |>    left_join(reference_values, by = "PP") |>    mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red"))  |> group_by(PP) |> 
+  filter(colour == "red") |> 
+  summarise(count_diff = n())
+  
+```
+
+```{r}
+tolerance <- 0.0001
+# Join the reference values back to the merged_data 
+a_merged_data <- merged_data %>%
+  filter(time == 800) %>%
+  left_join(reference_values, by = "PP") %>%
+  mutate(colour = ifelse(abs(Ca - reference_Ca) < tolerance, "blue", "red")) %>%
+  group_by(PP) %>%
+  filter(colour == "red") %>%
+  mutate(fold_change = Ca / reference_Ca,
+         direction_change = if_else(fold_change > 1, "increase", "decrease"),
+         decimal_part = (fold_change - floor(fold_change)),
+         percent_change = decimal_part * 100,
+         round_fold_change = round(decimal_part, 3)) %>%
+  select(Ca, reference_Ca, fold_change, decimal_part, direction_change, sc, percent_change, PP) %>%
+  mutate(strenght_fold_change = if_else(decimal_part <= 0.10, "nochange",
+                                        if_else(decimal_part <= 0.25, "25%",
+                                        if_else(decimal_part <= 0.50, "50%",
+                                        if_else(decimal_part <= 0.75, "75%",
+                                        if_else(decimal_part <= 0.90, "else", "nochange"))))))
+
+
+fold_change_summary <- a_merged_data %>%
+  group_by(PP, strenght_fold_change) %>%
+  summarise(count = n())
+
+ggplot(fold_change_summary, aes(x = strenght_fold_change, y = count)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Frequency of Fold Change Strength Categories",
+       x = "Fold Change Strength Category",
+       y = "Count") +
+  facet_wrap(~PP)
+  
+```
+
+```{r}
+ggplot(a_merged_data, aes(x = fold_change, fill = direction_change)) +
+  geom_histogram(binwidth = 0.05, color = "black", position = "dodge") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Histogram of Fold Change Values",
+       x = "Fold Change",
+       y = "Count")+
+  facet_wrap(~PP)
+```
